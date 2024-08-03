@@ -42,17 +42,30 @@ async def start(update: Update, context: CallbackContext) -> None:
         "/addnames чтобы добавить участников опроса\n"
         "/removenames чтобы удалить участников\n"
         "/listnames чтобы показать текущий список участников\n"
-        "/question чтобы задать случайный вопрос с текущим списком участников"
+        "/question чтобы задать случайный вопрос с текущим списком участников\n"
+        "/help чтобы увидеть список команд"
     )
     await update.message.reply_text(welcome_message)
 
 
-async def prompt_add_names(update: Update, context: CallbackContext) -> int:
-    await update.message.reply_text('Введи имена для добавления, разделенные запятыми')
-    return ADDING_NAMES
+async def help_command(update: Update, context: CallbackContext) -> None:
+    help_message = (
+        "Команды бота:\n"
+        "/addnames чтобы добавить участников опроса\n"
+        "/removenames чтобы удалить участников\n"
+        "/listnames чтобы показать текущий список участников\n"
+        "/question чтобы задать случайный вопрос с текущим списком участников\n"
+        "/help чтобы увидеть список команд"
+    )
+    await update.message.reply_text(help_message)
 
 
-async def add_names(update: Update, context: CallbackContext) -> int:
+async def prompt_add_names(update: Update, context: CallbackContext) -> None:
+    await update.message.reply_text('Введите имена для добавления, разделенные запятыми')
+
+
+async def add_names(update: Update, context: CallbackContext) -> None:
+    global names
     new_names = update.message.text.split(',')
     added_names = []
     for name in new_names:
@@ -66,15 +79,13 @@ async def add_names(update: Update, context: CallbackContext) -> int:
     else:
         await update.message.reply_text('Ни одно новое имя не было добавлено')
 
-    return ConversationHandler.END
 
-
-async def prompt_remove_names(update: Update, context: CallbackContext) -> int:
+async def prompt_remove_names(update: Update, context: CallbackContext) -> None:
     await update.message.reply_text('Введи имена для удаления, разделенные запятыми')
-    return REMOVING_NAMES
 
 
-async def remove_names(update: Update, context: CallbackContext) -> int:
+async def remove_names(update: Update, context: CallbackContext) -> None:
+    global names
     names_to_remove = update.message.text.split(',')
     removed_names = []
     for name in names_to_remove:
@@ -86,12 +97,11 @@ async def remove_names(update: Update, context: CallbackContext) -> int:
     if removed_names:
         await update.message.reply_text(f'Удалены имена: {", ".join(removed_names)}')
     else:
-        await update.message.reply_text('Ни одно имя не было удалено.')
-
-    return ConversationHandler.END
+        await update.message.reply_text('Ни одно имя не было удалено')
 
 
 async def list_names(update: Update, context: CallbackContext) -> None:
+    global names
     if len(names) == 0:
         await update.message.reply_text('Список пуст')
     else:
@@ -100,7 +110,7 @@ async def list_names(update: Update, context: CallbackContext) -> None:
 
 async def ask_question(update: Update, context: CallbackContext) -> None:
     if len(names) == 0:
-        await update.message.reply_text('Список имен пуст. Используйте команду /addnames для добавления имен.')
+        await update.message.reply_text('Список имен пуст. Используй команду /addnames для добавления имен')
         return
 
     question = get_random_question(names)
@@ -117,29 +127,17 @@ async def ask_question(update: Update, context: CallbackContext) -> None:
 def main() -> None:
     application = Application.builder().token(TELEGRAM_TOKEN).build()
 
-    conv_handler = ConversationHandler(
-        entry_points=[CommandHandler("addnames", prompt_add_names)],
-        states={
-            ADDING_NAMES: [MessageHandler(filters.TEXT & ~filters.COMMAND, add_names)],
-        },
-        fallbacks=[]
-    )
-
-    remove_conv_handler = ConversationHandler(
-        entry_points=[CommandHandler("removenames", prompt_remove_names)],
-        states={
-            REMOVING_NAMES: [MessageHandler(filters.TEXT & ~filters.COMMAND, remove_names)],
-        },
-        fallbacks=[]
-    )
-
     application.add_handler(CommandHandler("start", start))
-    application.add_handler(conv_handler)
-    application.add_handler(remove_conv_handler)
+    application.add_handler(CommandHandler("help", help_command))
+    application.add_handler(CommandHandler("addnames", prompt_add_names))
+    application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, add_names))
+    application.add_handler(CommandHandler("removenames", prompt_remove_names))
+    application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, remove_names))
     application.add_handler(CommandHandler("listnames", list_names))
     application.add_handler(CommandHandler("question", ask_question))
 
     application.run_polling()
+
 
 
 if __name__ == '__main__':
