@@ -1,10 +1,6 @@
 import os
-import random
-from dotenv import load_dotenv
 from telegram import Update
 from telegram.ext import Application, CommandHandler, MessageHandler, filters, CallbackContext, ConversationHandler
-
-load_dotenv()
 
 TELEGRAM_TOKEN = os.getenv('TELEGRAM_TOKEN_BOT')
 
@@ -19,20 +15,21 @@ def load_questions(filename='questions.txt'):
 
 
 questions = load_questions()
-used_questions = []
+used_questions = -1
 
 
-def get_random_question(names_list):
-    global used_questions, questions
-    if len(used_questions) == len(questions):
-        used_questions = []
-    available_questions = [q for q in questions if q not in used_questions]
-    question_template = random.choice(available_questions)
-    used_questions.append(question_template)
+def get_random_question():
+    # global used_questions, questions
+    # if len(used_questions) == len(questions):
+    #     used_questions = []
+    # available_questions = [q for q in questions if q not in used_questions]
+    # question_template = random.choice(available_questions)
+    # used_questions.append(question_template)
 
-    names_str = ', '.join(names_list)
-    question = f"{question_template}"
-    return question
+    # question = f"{question_template}"
+    # return question
+    used_questions = (used_questions + 1) / len(questions)
+    return questions[used_questions]
 
 
 async def start(update: Update, context: CallbackContext) -> None:
